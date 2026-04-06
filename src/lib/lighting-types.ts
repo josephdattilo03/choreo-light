@@ -15,6 +15,18 @@ export interface LightingState {
   showPerformer: boolean;
 }
 
+export interface TimelineKeyframe {
+  id: string;
+  name: string;
+  timeMs: number;
+  lightingState: LightingState;
+}
+
+export interface LightingTimeline {
+  durationMs: number;
+  keyframes: TimelineKeyframe[];
+}
+
 export interface Cue {
   id: string;
   name: string;
@@ -23,6 +35,22 @@ export interface Cue {
   preview?: {
     colors: string[];
     intensity: number;
+  };
+}
+
+export function createDefaultLightingState(): LightingState {
+  return {
+    lights: createDefaultLights(),
+    backdropColor: "#2d2d3d",
+    stageColor: "#1a1a24",
+    showPerformer: true,
+  };
+}
+
+export function createDefaultTimeline(): LightingTimeline {
+  return {
+    durationMs: 180000,
+    keyframes: [],
   };
 }
 
