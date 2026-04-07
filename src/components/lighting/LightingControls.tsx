@@ -1,7 +1,6 @@
 "use client";
 
 import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
 import {
   Accordion,
   AccordionContent,
@@ -82,13 +81,9 @@ export function LightingControls({
                         id={light.id}
                         onClick={(e) => e.stopPropagation()}
                       />
-                      <Label 
-                        htmlFor={light.id}
-                        className="text-sm text-zinc-300 cursor-pointer flex-1"
-                        onClick={(e) => e.stopPropagation()}
-                      >
+                      <span className="flex-1 cursor-pointer text-sm text-zinc-300">
                         {light.name}
-                      </Label>
+                      </span>
                       {light.active && (
                         <div 
                           className="w-4 h-4 rounded-full border border-zinc-500 flex-shrink-0"

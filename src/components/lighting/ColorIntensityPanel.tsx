@@ -8,7 +8,8 @@ interface ColorIntensityPanelProps {
   intensity: number;
   onColorChange: (color: string) => void;
   onIntensityChange: (intensity: number) => void;
-  selectedLightsCount: number;
+  targetLightsCount: number;
+  selectionMode: "selected" | "active" | "none";
   customColor: string;
   onCustomColorChange: (color: string) => void;
 }
@@ -30,24 +31,38 @@ export function ColorIntensityPanel({
   intensity, 
   onColorChange, 
   onIntensityChange,
-  selectedLightsCount,
+  targetLightsCount,
+  selectionMode,
   customColor,
   onCustomColorChange,
 }: ColorIntensityPanelProps) {
+  const hasEditableLights = targetLightsCount > 0;
+  const selectionLabel =
+    selectionMode === "selected"
+      ? `${targetLightsCount} light${targetLightsCount > 1 ? "s" : ""} selected`
+      : selectionMode === "active"
+        ? `Editing ${targetLightsCount} active light${targetLightsCount > 1 ? "s" : ""}`
+        : "";
+
   return (
     <div className="bg-zinc-800 rounded-lg p-6 space-y-6">
       <div className="flex items-center justify-between">
         <h3>Light Controls</h3>
-        {selectedLightsCount > 0 && (
+        {hasEditableLights && (
           <span className="text-sm text-blue-400">
-            {selectedLightsCount} light{selectedLightsCount > 1 ? 's' : ''} selected
+            {selectionLabel}
           </span>
         )}
       </div>
       
-      {selectedLightsCount === 0 && (
+      {!hasEditableLights && (
         <div className="text-sm text-zinc-500 bg-zinc-900 rounded p-3">
           Select a light to adjust its color and intensity
+        </div>
+      )}
+      {selectionMode === "active" && hasEditableLights && (
+        <div className="text-sm text-zinc-400 bg-zinc-900 rounded p-3">
+          No specific fixture is selected, so changes apply to all active lights in the current look.
         </div>
       )}
       
@@ -58,11 +73,11 @@ export function ColorIntensityPanel({
             <button
               key={color.value}
               onClick={() => onColorChange(color.value)}
-              disabled={selectedLightsCount === 0}
+              disabled={!hasEditableLights}
               className={`w-12 h-12 rounded-full border-4 transition-all ${
                 selectedColor === color.value 
                   ? 'border-white scale-110 shadow-lg' 
-                  : selectedLightsCount === 0
+                  : !hasEditableLights
                   ? 'border-zinc-700 opacity-50 cursor-not-allowed'
                   : 'border-zinc-600 hover:border-zinc-400'
               }`}
@@ -77,16 +92,16 @@ export function ColorIntensityPanel({
               type="color"
               value={customColor}
               onChange={(e) => onCustomColorChange(e.target.value)}
-              disabled={selectedLightsCount === 0}
+              disabled={!hasEditableLights}
               className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed"
               title="Custom Color"
             />
             <button
-              disabled={selectedLightsCount === 0}
+              disabled={!hasEditableLights}
               className={`w-12 h-12 rounded-full border-4 transition-all flex items-center justify-center ${
                 selectedColor === customColor 
                   ? 'border-white scale-110 shadow-lg' 
-                  : selectedLightsCount === 0
+                  : !hasEditableLights
                   ? 'border-zinc-700 opacity-50 cursor-not-allowed'
                   : 'border-zinc-600 hover:border-zinc-400'
               }`}
@@ -110,7 +125,7 @@ export function ColorIntensityPanel({
           max={100}
           step={1}
           className="w-full"
-          disabled={selectedLightsCount === 0}
+          disabled={!hasEditableLights}
         />
         <div className="flex justify-between mt-2 text-sm text-zinc-400">
           <span>0%</span>
