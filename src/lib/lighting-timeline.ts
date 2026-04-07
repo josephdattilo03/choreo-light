@@ -87,22 +87,32 @@ export function interpolateLightingState(
   end: LightingState,
   progress: number,
 ): LightingState {
+  const safeProgress = clamp(progress, 0, 1);
+  if (safeProgress <= 0) {
+    return cloneLightingState(start);
+  }
+  if (safeProgress >= 1) {
+    return cloneLightingState(end);
+  }
+
   return {
     lights: start.lights.map((light, index) => {
       const nextLight = end.lights[index] ?? light;
-      const intensity = interpolateNumber(light.intensity, nextLight.intensity, progress);
-      const isActive = intensity > 0 && (light.active || nextLight.active || intensity > 2);
+      const startLevel = light.active ? light.intensity : 0;
+      const endLevel = nextLight.active ? nextLight.intensity : 0;
+      const intensity = interpolateNumber(startLevel, endLevel, safeProgress);
+      const isActive = intensity > 0;
 
       return {
         ...light,
-        color: interpolateColor(light.color, nextLight.color, progress),
+        color: interpolateColor(light.color, nextLight.color, safeProgress),
         intensity,
         active: isActive,
       };
     }),
-    backdropColor: interpolateColor(start.backdropColor, end.backdropColor, progress),
-    stageColor: interpolateColor(start.stageColor, end.stageColor, progress),
-    showPerformer: progress < 0.5 ? start.showPerformer : end.showPerformer,
+    backdropColor: interpolateColor(start.backdropColor, end.backdropColor, safeProgress),
+    stageColor: interpolateColor(start.stageColor, end.stageColor, safeProgress),
+    showPerformer: safeProgress < 0.5 ? start.showPerformer : end.showPerformer,
   };
 }
 
@@ -132,6 +142,12 @@ export function getTimelineStateAtTime(
     const end = keyframes[index + 1];
 
     if (clampedTime >= start.timeMs && clampedTime <= end.timeMs) {
+      if (clampedTime <= start.timeMs) {
+        return cloneLightingState(start.lightingState);
+      }
+      if (clampedTime >= end.timeMs) {
+        return cloneLightingState(end.lightingState);
+      }
       const span = end.timeMs - start.timeMs || 1;
       const progress = (clampedTime - start.timeMs) / span;
       return interpolateLightingState(start.lightingState, end.lightingState, progress);

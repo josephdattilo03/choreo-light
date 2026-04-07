@@ -58,6 +58,9 @@ export function TimelineEditor({
           <h3 className="mb-1">Performance Timeline</h3>
           <p className="text-sm text-zinc-400">
             Add lighting keyframes, scrub through the performance, and let the stage blend between looks.
+            New keyframes start from a full blackout (all fixtures off) so you can build the look from
+            scratch. While a keyframe is selected, edits are saved automatically when you scrub or pick
+            another marker.
           </p>
         </div>
 

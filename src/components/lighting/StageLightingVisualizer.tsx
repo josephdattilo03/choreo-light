@@ -6,6 +6,7 @@ import { toast } from "sonner";
 
 import { ColorIntensityPanel } from "@/components/lighting/ColorIntensityPanel";
 import { CueList } from "@/components/lighting/CueList";
+import { ExportCueSheetPanel } from "@/components/lighting/ExportCueSheetPanel";
 import { HistoryControls } from "@/components/lighting/HistoryControls";
 import { LightingControls } from "@/components/lighting/LightingControls";
 import { StageVisualization } from "@/components/lighting/StageVisualization";
@@ -14,6 +15,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Toaster } from "@/components/ui/sonner";
 import {
+  createBlankKeyframeLightingState,
   createDefaultLightingState,
   createDefaultTimeline,
   type Cue,
@@ -21,9 +23,11 @@ import {
   type LightingState,
   type LightingTimeline,
 } from "@/lib/lighting-types";
+import type { LightingExportMetadata } from "@/lib/export-lighting-types";
 import {
   createDefaultProjectCache,
   loadLightingProjectCache,
+  normalizeExportMetadata,
   saveLightingProjectCache,
 } from "@/lib/lighting-cache";
 import {
@@ -69,6 +73,9 @@ export function StageLightingVisualizer() {
   const [playheadMs, setPlayheadMs] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isHydrated, setIsHydrated] = useState(false);
+  const [exportMetadata, setExportMetadata] = useState<LightingExportMetadata>(
+    () => createDefaultProjectCache().exportMetadata!,
+  );
 
   const historyIndexRef = useRef(historyIndex);
   const playheadRef = useRef(playheadMs);
@@ -345,20 +352,54 @@ export function StageLightingVisualizer() {
     setIsPlaying(true);
   }, [isPlaying, timeline.keyframes.length]);
 
+  const commitAnchoredKeyframeLighting = useCallback(() => {
+    if (!activeKeyframeId) {
+      return;
+    }
+
+    const keyframe = timeline.keyframes.find((entry) => entry.id === activeKeyframeId);
+    if (!keyframe) {
+      return;
+    }
+
+    if (Math.abs(playheadMs - keyframe.timeMs) > 250) {
+      return;
+    }
+
+    if (JSON.stringify(currentState) === JSON.stringify(keyframe.lightingState)) {
+      return;
+    }
+
+    setTimeline((previousTimeline) =>
+      normalizeTimeline({
+        ...previousTimeline,
+        keyframes: previousTimeline.keyframes.map((kf) =>
+          kf.id === keyframe.id
+            ? { ...kf, lightingState: cloneLightingState(currentState) }
+            : kf,
+        ),
+      }),
+    );
+  }, [activeKeyframeId, currentState, playheadMs, timeline.keyframes]);
+
   const handleStop = useCallback(() => {
+    commitAnchoredKeyframeLighting();
     setIsPlaying(false);
     setPlayheadMs(0);
-  }, []);
+  }, [commitAnchoredKeyframeLighting]);
 
   const handleScrub = useCallback(
     (nextTimeMs: number) => {
+      commitAnchoredKeyframeLighting();
       setIsPlaying(false);
       setPlayheadMs(clampTimelineTime(nextTimeMs, timeline.durationMs));
     },
-    [timeline.durationMs],
+    [commitAnchoredKeyframeLighting, timeline.durationMs],
   );
 
   const handleAddKeyframe = useCallback(() => {
+    commitAnchoredKeyframeLighting();
+
     const existingKeyframe = findKeyframeAtTime(timeline.keyframes, playheadMs);
     if (existingKeyframe) {
       setActiveKeyframeId(existingKeyframe.id);
@@ -372,11 +413,12 @@ export function StageLightingVisualizer() {
       Math.round(playheadMs / 100) * 100,
       timeline.durationMs,
     );
+    const blankState = cloneLightingState(createBlankKeyframeLightingState());
     const nextKeyframe = {
       id: `keyframe-${Date.now()}`,
       name: `Look ${String(timeline.keyframes.length + 1).padStart(2, "0")}`,
       timeMs: snappedTime,
-      lightingState: cloneLightingState(currentState),
+      lightingState: blankState,
     };
 
     setTimeline((previousTimeline) =>
@@ -387,11 +429,20 @@ export function StageLightingVisualizer() {
     );
     setActiveKeyframeId(nextKeyframe.id);
     setPlayheadMs(snappedTime);
+    applyPreviewState(blankState);
     toast.success(`Added ${nextKeyframe.name}`);
-  }, [currentState, playheadMs, timeline.durationMs, timeline.keyframes]);
+  }, [
+    applyPreviewState,
+    commitAnchoredKeyframeLighting,
+    playheadMs,
+    timeline.durationMs,
+    timeline.keyframes,
+  ]);
 
   const handleSelectKeyframe = useCallback(
     (keyframeId: string) => {
+      commitAnchoredKeyframeLighting();
+
       const keyframe = timeline.keyframes.find((entry) => entry.id === keyframeId);
       if (!keyframe) {
         return;
@@ -402,7 +453,7 @@ export function StageLightingVisualizer() {
       setPlayheadMs(keyframe.timeMs);
       applyPreviewState(keyframe.lightingState);
     },
-    [applyPreviewState, timeline.keyframes],
+    [applyPreviewState, commitAnchoredKeyframeLighting, timeline.keyframes],
   );
 
   const handleUpdateKeyframe = useCallback(() => {
@@ -480,6 +531,8 @@ export function StageLightingVisualizer() {
 
   const handleDurationChange = useCallback(
     (nextDurationMs: number) => {
+      commitAnchoredKeyframeLighting();
+
       const clampedDuration = Math.min(
         Math.max(nextDurationMs, TIMELINE_MIN_DURATION_MS),
         TIMELINE_MAX_DURATION_MS,
@@ -498,7 +551,7 @@ export function StageLightingVisualizer() {
       );
       setPlayheadMs((previousTime) => clampTimelineTime(previousTime, safeDuration));
     },
-    [timeline.keyframes],
+    [commitAnchoredKeyframeLighting, timeline.keyframes],
   );
 
   const effectiveBackdropColor = useMemo(() => {
@@ -611,6 +664,10 @@ export function StageLightingVisualizer() {
     setActiveKeyframeId(cachedProject.activeKeyframeId);
     setCustomColor(cachedProject.customColor);
     setPlayheadMs(normalizedPlayhead);
+    const defaults = createDefaultProjectCache();
+    setExportMetadata(
+      normalizeExportMetadata(cachedProject.exportMetadata, defaults.exportMetadata!),
+    );
     setIsHydrated(true);
   }, []);
 
@@ -628,6 +685,7 @@ export function StageLightingVisualizer() {
       activeKeyframeId,
       customColor,
       playheadMs,
+      exportMetadata,
     });
   }, [
     activeCueId,
@@ -635,10 +693,46 @@ export function StageLightingVisualizer() {
     cues,
     currentState,
     customColor,
+    exportMetadata,
     isHydrated,
     playheadMs,
     timeline,
   ]);
+
+  useEffect(() => {
+    if (!isHydrated || !activeKeyframeId) {
+      return;
+    }
+
+    const keyframe = timeline.keyframes.find((entry) => entry.id === activeKeyframeId);
+    if (!keyframe || Math.abs(playheadMs - keyframe.timeMs) > 250) {
+      return;
+    }
+
+    const keyframeId = activeKeyframeId;
+    const timeoutId = window.setTimeout(() => {
+      const latestState = currentStateRef.current;
+      setTimeline((previousTimeline) => {
+        const existing = previousTimeline.keyframes.find((entry) => entry.id === keyframeId);
+        if (!existing || Math.abs(playheadRef.current - existing.timeMs) > 250) {
+          return previousTimeline;
+        }
+        if (JSON.stringify(existing.lightingState) === JSON.stringify(latestState)) {
+          return previousTimeline;
+        }
+        return normalizeTimeline({
+          ...previousTimeline,
+          keyframes: previousTimeline.keyframes.map((kf) =>
+            kf.id === keyframeId
+              ? { ...kf, lightingState: cloneLightingState(latestState) }
+              : kf,
+          ),
+        });
+      });
+    }, 400);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [activeKeyframeId, currentState, isHydrated, playheadMs, timeline.keyframes]);
 
   useEffect(() => {
     if (timeline.keyframes.length === 0) {
@@ -763,6 +857,12 @@ export function StageLightingVisualizer() {
           onDeleteKeyframe={handleDeleteKeyframe}
           onSelectKeyframe={handleSelectKeyframe}
           onRenameKeyframe={handleRenameKeyframe}
+        />
+
+        <ExportCueSheetPanel
+          timeline={timeline}
+          exportMetadata={exportMetadata}
+          onExportMetadataChange={setExportMetadata}
         />
 
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">

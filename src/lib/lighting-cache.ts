@@ -6,9 +6,29 @@ import {
   type LightingTimeline,
 } from "@/lib/lighting-types";
 import { clampTimelineTime, normalizeTimeline } from "@/lib/lighting-timeline";
+import {
+  EXPORT_SHEET_PLACEHOLDER,
+  type LightingExportMetadata,
+} from "@/lib/export-lighting-types";
 
 export const LIGHTING_PROJECT_CACHE_KEY = "choreo-light-project-cache";
-const CACHE_VERSION = 1;
+const CACHE_VERSION = 2;
+
+export function normalizeExportMetadata(
+  partial: Partial<LightingExportMetadata> | undefined,
+  defaults: LightingExportMetadata,
+): LightingExportMetadata {
+  return {
+    pieceName: partial?.pieceName ?? defaults.pieceName,
+    choreographerName: partial?.choreographerName ?? defaults.choreographerName,
+    phoneNumber: partial?.phoneNumber ?? defaults.phoneNumber,
+    generalVibe: partial?.generalVibe ?? defaults.generalVibe,
+    techCueOffset:
+      typeof partial?.techCueOffset === "number"
+        ? Math.max(0, Math.floor(partial.techCueOffset))
+        : defaults.techCueOffset,
+  };
+}
 
 export interface LightingProjectCache {
   version: number;
@@ -19,6 +39,8 @@ export interface LightingProjectCache {
   activeKeyframeId?: string;
   customColor: string;
   playheadMs: number;
+  /** Optional fields for .xlsx cue sheet export */
+  exportMetadata?: LightingExportMetadata;
 }
 
 export function createDefaultProjectCache(): LightingProjectCache {
@@ -31,6 +53,13 @@ export function createDefaultProjectCache(): LightingProjectCache {
     activeKeyframeId: undefined,
     customColor: "#ff00ff",
     playheadMs: 0,
+    exportMetadata: {
+      pieceName: EXPORT_SHEET_PLACEHOLDER.pieceName,
+      choreographerName: "",
+      phoneNumber: "",
+      generalVibe: "",
+      techCueOffset: 1,
+    },
   };
 }
 
@@ -55,6 +84,10 @@ export function loadLightingProjectCache() {
       timeline,
       playheadMs: clampTimelineTime(parsed.playheadMs ?? 0, timeline.durationMs),
       version: CACHE_VERSION,
+      exportMetadata: normalizeExportMetadata(
+        parsed.exportMetadata,
+        defaults.exportMetadata!,
+      ),
     } satisfies LightingProjectCache;
   } catch {
     return null;

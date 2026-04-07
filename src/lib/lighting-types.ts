@@ -47,6 +47,19 @@ export function createDefaultLightingState(): LightingState {
   };
 }
 
+/** All fixtures off at 0% — used when adding a new keyframe so you build from black. */
+export function createBlankKeyframeLightingState(): LightingState {
+  const base = createDefaultLightingState();
+  return {
+    ...base,
+    lights: base.lights.map((light) => ({
+      ...light,
+      active: false,
+      intensity: 0,
+    })),
+  };
+}
+
 export function createDefaultTimeline(): LightingTimeline {
   return {
     durationMs: 180000,
