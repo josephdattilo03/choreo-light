@@ -1,38 +1,116 @@
 AI ATTRIBUTION: AI was used to generate code for this project.
 
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🎭 Choreo Light — Stage Lighting Choreography
 
-## Getting Started
+<p align="center">
+  <strong>CUE THE LIGHTS!</strong>
+</p>
 
-First, run the development server:
+<p align="center">
+  <img alt="Next.js" src="https://img.shields.io/badge/Next.js-15-black?logo=next.js">
+  <img alt="React" src="https://img.shields.io/badge/React-18-61DAFB?logo=react">
+  <img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript">
+  <img alt="Tailwind CSS" src="https://img.shields.io/badge/Tailwind-3-38B2AC?logo=tailwindcss">
+</p>
+
+**Choreo Light** is a _browser-based stage lighting visualizer_ and cue/keyframe choreography editor. Select lights on a virtual stage, dial in color and intensity, snapshot the look into a cue list, scrub a keyframe timeline, and export the whole cue sheet to Excel.
+
+[Repo](https://github.com/josephdattilo03/choreo-light) · [Issues](https://github.com/josephdattilo03/choreo-light/issues) · [Pull Requests](https://github.com/josephdattilo03/choreo-light/pulls)
+
+New here? Start with the Quick start below.
+
+Preferred setup: clone the repo, `npm install`, `npm run dev`, then open http://localhost:3000 in your browser.
+
+## Install (recommended)
+
+Runtime: Node 18.18+ (see `engines` in `package.json`).
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+git clone https://github.com/josephdattilo03/choreo-light.git
+cd choreo-light
+npm install
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Cloning pulls the full Next.js 15 app. `npm install` resolves Radix UI, Tailwind, `exceljs`, `motion`, `sonner`, `lucide-react`, and `next-themes` — everything the visualizer needs.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Quick start (TL;DR)
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Runtime: Node 18.18+.
 
-## Learn More
+```bash
+npm install
+npm run dev
+# open http://localhost:3000
+```
 
-To learn more about Next.js, take a look at the following resources:
+Edit `src/app/page.tsx` or any component under `src/components/lighting/` and the page hot-reloads.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Data storage
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Choreo Light runs entirely in the browser. Project state — the current lighting snapshot, cue list, timeline, and export metadata — is cached to `localStorage` through `src/lib/lighting-cache.ts`, so reloading the tab restores the last session. There is no backend and nothing leaves the browser.
 
-## Deploy on Vercel
+## Highlights
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- **[Stage visualization](src/components/lighting/StageVisualization.tsx)** — interactive stage canvas for selecting lights and previewing the current look.
+- **[Color & intensity panel](src/components/lighting/ColorIntensityPanel.tsx)** — pick a preset or custom color, scrub intensity, apply to the selected lights.
+- **[Lighting controls](src/components/lighting/LightingControls.tsx)** — fixture toggles and bulk actions for the selected rig.
+- **[Cue list](src/components/lighting/CueList.tsx)** — snapshot the current state as a named cue, recall cues, reorder, and edit them.
+- **[Keyframe timeline editor](src/components/lighting/TimelineEditor.tsx)** — place keyframes on a timeline, scrub the playhead, and play back interpolated looks.
+- **[History (undo/redo)](src/components/lighting/HistoryControls.tsx)** — linear history stack for every state change.
+- **[Export cue sheet](src/components/lighting/ExportCueSheetPanel.tsx)** — render the cue list to a formatted `.xlsx` workbook via `exceljs` (see `src/lib/export-lighting-sheet.ts`).
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Scripts
+
+- `npm run dev` — start the Next.js dev server on port 3000.
+- `npm run build` — production build.
+- `npm run start` — serve the production build.
+- `npm run lint` — run ESLint (`eslint-config-next`).
+
+## Project structure
+
+- `src/app/` — Next.js App Router entry (`page.tsx` mounts the visualizer, `layout.tsx` wires up fonts and theme).
+- `src/components/lighting/` — the lighting editor: stage, controls, cue list, timeline, export panel, history.
+- `src/components/ui/` — shared Radix-based UI primitives (buttons, dialogs, sliders, switches, scroll areas, toasts).
+- `src/lib/` — domain logic: `lighting-types.ts`, `lighting-timeline.ts`, `lighting-cache.ts`, `export-lighting-sheet.ts`, and the export type/color helpers.
+
+## From source (development)
+
+```bash
+git clone https://github.com/josephdattilo03/choreo-light.git
+cd choreo-light
+npm install
+npm run dev
+```
+
+The dev server watches files under `src/` and hot-reloads. The entry point is `src/app/page.tsx`, which renders `<StageLightingVisualizer />` from `src/components/lighting/StageLightingVisualizer.tsx` — that component owns the full editor state (current lighting state, history, cues, timeline, playhead, export metadata).
+
+## Configuration
+
+Build and styling config live at the repo root:
+
+- `next.config.ts` — Next.js configuration.
+- `tailwind.config.ts` — Tailwind theme and content paths.
+- `postcss.config.mjs` — PostCSS pipeline.
+- `tsconfig.json` — TypeScript compiler options and path aliases (`@/*` → `src/*`).
+
+To embed the editor in another Next.js page:
+
+```tsx
+import { StageLightingVisualizer } from "@/components/lighting/StageLightingVisualizer";
+
+export default function Page() {
+  return <StageLightingVisualizer />;
+}
+```
+
+## Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=josephdattilo03/choreo-light&type=date&legend=top-left)](https://www.star-history.com/#josephdattilo03/choreo-light&type=date&legend=top-left)
+
+## About
+
+Choreo Light is built by [Joseph Dattilo](https://github.com/josephdattilo03) and [Andrew Wang](https://github.com/yongzhe-wang), with contributions from the commit history. AI assistance was used during development — see the attribution at the top of this file.
+
+## Community
+
+Contributions welcome via pull request. Open an [issue](https://github.com/josephdattilo03/choreo-light/issues) to report bugs or propose features, or send a [PR](https://github.com/josephdattilo03/choreo-light/pulls) directly.
