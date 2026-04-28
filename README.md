@@ -1,4 +1,5 @@
 AI ATTRIBUTION: AI was used to generate code for this project.
+Co-Authored-By: Claude Opus 4.7
 
 # 🎭 Choreo Light — Stage Lighting Choreography
 
