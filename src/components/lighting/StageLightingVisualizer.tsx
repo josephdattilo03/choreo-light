@@ -9,6 +9,7 @@ import { CueList } from "@/components/lighting/CueList";
 import { ExportCueSheetPanel } from "@/components/lighting/ExportCueSheetPanel";
 import { HistoryControls } from "@/components/lighting/HistoryControls";
 import { LightingControls } from "@/components/lighting/LightingControls";
+import Stage3D from "@/components/lighting/Stage3D";
 import { StageVisualization } from "@/components/lighting/StageVisualization";
 import { TimelineEditor } from "@/components/lighting/TimelineEditor";
 import { Label } from "@/components/ui/label";
@@ -72,6 +73,7 @@ export function StageLightingVisualizer() {
   const [activeKeyframeId, setActiveKeyframeId] = useState<string | undefined>();
   const [playheadMs, setPlayheadMs] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [is3DView, setIs3DView] = useState(false);
   const [isHydrated, setIsHydrated] = useState(false);
   const [exportMetadata, setExportMetadata] = useState<LightingExportMetadata>(
     () => createDefaultProjectCache().exportMetadata!,
@@ -792,6 +794,17 @@ export function StageLightingVisualizer() {
 
           <div className="flex flex-wrap items-center gap-4">
             <div className="flex items-center gap-2 rounded-lg bg-zinc-800 px-4 py-2">
+              <Label htmlFor="view-toggle" className="cursor-pointer">
+                {is3DView ? "3D View" : "2D View"}
+              </Label>
+              <Switch
+                id="view-toggle"
+                checked={is3DView}
+                onCheckedChange={setIs3DView}
+              />
+            </div>
+
+            <div className="flex items-center gap-2 rounded-lg bg-zinc-800 px-4 py-2">
               <User className="w-4 h-4" />
               <Label htmlFor="performer-toggle" className="cursor-pointer">
                 Show Performer
@@ -817,15 +830,27 @@ export function StageLightingVisualizer() {
       <div className="flex flex-col gap-6">
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-4">
           <div className="h-[500px] lg:col-span-3">
-            <StageVisualization
-              lights={currentState.lights}
-              backdropColor={effectiveBackdropColor}
-              stageColor={currentState.stageColor}
-              showPerformer={currentState.showPerformer}
-              selectedLights={selectedLights}
-              onLightClick={selectLight}
-              onLightToggle={toggleLight}
-            />
+            {is3DView ? (
+              <Stage3D
+                lights={currentState.lights}
+                backdropColor={effectiveBackdropColor}
+                stageColor={currentState.stageColor}
+                showPerformer={currentState.showPerformer}
+                selectedLights={selectedLights}
+                onLightClick={selectLight}
+                onLightToggle={toggleLight}
+              />
+            ) : (
+              <StageVisualization
+                lights={currentState.lights}
+                backdropColor={effectiveBackdropColor}
+                stageColor={currentState.stageColor}
+                showPerformer={currentState.showPerformer}
+                selectedLights={selectedLights}
+                onLightClick={selectLight}
+                onLightToggle={toggleLight}
+              />
+            )}
           </div>
 
           <div className="lg:col-span-1">
