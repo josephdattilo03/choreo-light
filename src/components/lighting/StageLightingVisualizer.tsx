@@ -884,12 +884,6 @@ export function StageLightingVisualizer() {
           onRenameKeyframe={handleRenameKeyframe}
         />
 
-        <ExportCueSheetPanel
-          timeline={timeline}
-          exportMetadata={exportMetadata}
-          onExportMetadataChange={setExportMetadata}
-        />
-
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
           <LightingControls
             categories={categories}
@@ -917,6 +911,14 @@ export function StageLightingVisualizer() {
           <li>• Saved cues remain separate from the timeline, so you can reuse looks anywhere</li>
           <li>• Your timeline and cues stay cached in this browser with no backend required</li>
         </ul>
+      </div>
+
+      <div className="mt-6">
+        <ExportCueSheetPanel
+          timeline={timeline}
+          exportMetadata={exportMetadata}
+          onExportMetadataChange={setExportMetadata}
+        />
       </div>
     </div>
   );
