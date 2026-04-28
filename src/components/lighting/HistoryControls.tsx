@@ -72,7 +72,7 @@ export function HistoryControls({
             Save Cue
           </Button>
         </DialogTrigger>
-        <DialogContent>
+        <DialogContent className="text-zinc-900">
           <DialogHeader>
             <DialogTitle>Save Lighting Cue</DialogTitle>
             <DialogDescription>
@@ -86,6 +86,7 @@ export function HistoryControls({
             </Label>
             <Input
               id="cue-name"
+              className="text-zinc-900 placeholder:text-zinc-500"
               placeholder="e.g., Opening Scene, Dramatic Moment"
               value={cueName}
               onChange={(e) => setCueName(e.target.value)}
